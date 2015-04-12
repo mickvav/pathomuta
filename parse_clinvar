@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+use Data::Dumper;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+
+while(<>){
+if(!/^#/) {
+my($CHROM ,$POS    ,$ID     ,$REF    ,$ALT    ,$QUAL   ,$FILTER ,$INFO)=split(/\t/);
+$ID=~s/rs//;
+my $line='INSERT INTO `MUTATIONS_CLINVAR` SET 
+CHROM='.$dbh->quote($CHROM).',
+POS='.$POS.',
+ID='.$ID.',
+REF='.$dbh->quote($REF).',
+ALT='.$dbh->quote($ALT).','.
+($QUAL =~/^\d+\.?\d+$/ ? "QUAL=$QUAL,":'').
+'FILTER='.$dbh->quote($FILTER).',';
+
+my @elems=split(/;/,$INFO);
+foreach my $elem(@elems) {
+  my $key=undef;
+  my $value=undef;
+  if($elem=~/^([A-Za-z_0-9]+)=([^;]+)$/) {
+     $key=$1;
+     $value=$2;  
+  } elsif($elem=~/^([A-Za-z_0-9]+)$/) {
+     $key=$1;
+     $value=1;
+  } else {
+     print "Problems parsing elem:".$elem."\n";
+     next;
+  };
+  $line.='info_'.$key.'='.($value=~/^\d+\.?\d+$/?$value : $dbh->quote($value) ).','; 
+ };
+chop($line);
+print $line."\n";
+my $sth=$dbh->prepare($line);
+$sth->execute();
+};
+$dbh->commit();
+};
+
+$dbh->disconnect();

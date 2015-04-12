@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+my $q = CGI->new;
+print $q->header();
+
+my $sth=$dbh->prepare('SHOW FULL COLUMNS from MUTATIONS');
+$sth->execute();
+print "{\n";
+my @list=();
+while (my $href=$sth->fetchrow_hashref())
+{
+    $href->{"Field"}=~s/info_//;
+    push @list, ' "'.$href->{"Field"}.'" : "'.$href->{"Comment"}.'" ';
+}
+print join(",",@list).",";
+$sth=$dbh->prepare('SHOW FULL COLUMNS from MUTATIONS_CLINVAR');
+$sth->execute();
+@list=();
+while (my $href=$sth->fetchrow_hashref())
+{
+    $href->{"Field"}=~s/info_//;
+    push @list, ' "'.$href->{"Field"}.'" : "'.$href->{"Comment"}.'" ';
+}
+print join(",",@list)."}";

@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+my $q = CGI->new;
+print $q->header();
+my $value=$q->param('id');
+if($value=~/^\d+$/) {
+   my $values=$dbh->selectall_arrayref('SELECT hgvs from rshgvs where rsId='.$value);
+   print "[\n";
+   print " \"".join("\",\"",(map $_->[0], @$values))."\"\n]";
+
+};

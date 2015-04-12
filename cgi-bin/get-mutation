@@ -1,0 +1,125 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+my $q = CGI->new;
+print $q->header();
+my $value=$q->param('id');
+my $format=$q->param('format');
+if(not(defined($format))) {
+   $format='json';
+};
+
+my $filecount = $dbh->selectall_arrayref('SELECT count(*) from files')->[0][0];
+my$anns='Allele|Annotation|Annotation_Impact|Gene_Name|Gene_ID|Feature_Type|Feature_ID|Transcript_BioType|Rank|HGVS.c|HGVS.p|cDNA.pos/cDNA.length|CDS.pos/CDS.length|AA.pos/AA.length|Distance|ERRORS/WARNINGS/INFO';
+my @anns=split(/\|/,$anns);
+if($value=~/^\d+$/) {
+   my $sth=$dbh->prepare('SELECT c.rsId as rsId,rs.Symbol as Symbol,rs.Frequency as Frequency,rs.geneId as geneId,m.* ,
+cl.POS as clinvar_pos,
+cl.info_RS as RSPOS,
+cl.info_RV as RV,
+cl.info_VP as VP,
+cl.info_GENEINFO as GENEINFO,
+cl.info_dbSNPBuildID as dbSNPBuildID,
+cl.info_SAO as SAO,
+cl.info_SSR as SSR,
+cl.info_WGT as WGT,
+cl.info_VC as VC,
+cl.info_PM as PM,
+cl.info_TPA as TPA,
+cl.info_PMC as PMC,
+cl.info_S3D as S3D,
+cl.info_SLO as SLO,
+cl.info_NSF as NSF,
+cl.info_NSM as NSM,
+cl.info_NSN as NSN,
+cl.info_REF as REF,
+cl.info_SYN as SYN,
+cl.info_U3 as U3,
+cl.info_U5 as U5,
+cl.info_ASS as ASS,
+cl.info_DSS as DSS,
+cl.info_INT as `INT`,
+cl.info_R3 as R3,
+cl.info_R5 as R5,
+cl.info_OTH as OTH,
+cl.info_CFL as CFL,
+ cl.info_ASP as ASP,
+ cl.info_MUT as MUT,
+ cl.info_VLD as VLD,
+ cl.info_G5A as G5A,
+ cl.info_G5 as G5,
+ cl.info_HD as HD,
+ cl.info_GNO as GNO,
+ cl.info_KGPhase1 as KGPhase1,
+ cl.info_KGPhase3 as KGPhase3,
+ cl.info_CDA as CDA,
+ cl.info_LSD as LSD,
+ cl.info_MTP as MTP,
+ cl.info_OM as OM,
+ cl.info_NOC as NOC,
+ cl.info_WTD as WTD,
+ cl.info_NOV as NOV,
+ cl.info_CAF as CAF,
+ cl.info_COMMON as COMMON,
+ cl.info_CLNHGVS as CLNHGVS,
+ cl.info_CLNALLE as CLNALLE,
+ cl.info_CLNSRC as CLNSRC,
+ cl.info_CLNORIGIN as CLNORIGIN,
+ cl.info_CLNSRCID as CLNSRCID,
+ cl.info_CLNSIG as CLNSIG,
+ cl.info_CLNDSDB as CLNDSDB,
+ cl.info_CLNDSDBID as CLNDSDBID,
+ cl.info_CLNDBN as CLNDBN,
+ cl.info_CLNREVSTAT as CLNREVSTAT,
+ cl.info_CLNACC as CLNACC,
+ (100*rstat.c)/'.$filecount.' as "Count in processed (%)"
+FROM MUTATIONS m
+INNER JOIN CGA_XR c ON (c.ROWID=m.ROWID)
+INNER JOIN (select rsId,count(*) c from CGA_XR group by rsId order by c) rstat ON (rstat.rsId = c.rsId)
+LEFT OUTER JOIN rs ON (rs.rsId=c.rsId)
+LEFT OUTER JOIN MUTATIONS_CLINVAR cl ON (cl.ID=c.rsId)
+where m.ROWID='.$value." ORDER BY rs.Symbol");
+   $sth->execute();
+   my @lines=();
+   if($format eq 'json') {
+     print "[\n";
+   } elsif ($format eq 'csv') {
+     print "Field\tValue\n";
+   };
+   if($format eq 'json') {
+     while (my $href=$sth->fetchrow_hashref()) {
+        my $local_ann=$href->{info_ANN};
+        my @lanns=split(/\|/,$local_ann);
+        for(my $i=0;$i<$#anns;$i++) {
+          $href->{"snpEff.".$anns[$i]}=$lanns[$i];
+        };
+        delete $href->{info_ANN};
+	push @lines, ("{ ".join(",\n", (map '"'.$_.'":"'.$href->{$_}.'"', keys(%{$href})))." }");
+     };
+   } elsif($format eq 'csv') {
+     while (my $href=$sth->fetchrow_hashref()) {
+	push @lines, (join("\n", (map $_."\t".$href->{$_}, sort(keys(%{$href})))));
+     };
+
+   };
+   if($format eq 'json') {
+   my $linej= join(',',@lines);
+   $linej=~s/\\/\\\\/g;
+   $linej=~s/\n//g;
+   print $linej;
+   print "]";
+   } elsif ($format eq 'csv') {
+   my $linej= join("\n\n",@lines);
+   print $linej;
+
+   };
+};
+$dbh->disconnect();

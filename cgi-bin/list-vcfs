@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+my $q = CGI->new;
+print $q->header();
+my $sth=$dbh->prepare('SELECT FILEID,FILENAME from files');
+$sth->execute();
+print "[\n";
+my @list=();
+while (my ($id, $fname) = $sth->fetchrow_array())
+{
+     push @list, "{ \"name\":\"$fname\", \"id\":\"$id\"}";
+}
+print join(",",@list)."]";

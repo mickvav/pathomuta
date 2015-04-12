@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+use strict;
+use DBI;
+use CGI;
+use Data::Dumper;
+my $dsn = 'DBI:mysql:mutfreq:localhost';
+my $user= 'mutfreq';
+my $password='mutfreq';
+
+my $dbh = DBI->connect($dsn, $user, $password,
+                    { RaiseError => 1, AutoCommit => 0 });
+
+my $q = CGI->new;
+my $value=$q->param('id');
+my $format=$q->param('format');
+if(not(defined($format))) {
+   $format='json';
+};
+my $filename = $dbh->selectall_arrayref('SELECT FILENAME FROM files WHERE FILEID='.$value)->[0][0];
+if($format eq 'csv') {
+  print $q->header('content-disposition','attachment; filename='.$filename.'.csv');
+} else {
+  print $q->header();
+}
+
+
+if($value=~/^\d+$/) {
+   my $sth=$dbh->prepare(
+'SELECT m.*,c.rsId as rsId,rs.Symbol as Symbol,rs.Frequency as Frequency,rs.geneId as geneId
+FROM MUTATIONS m
+INNER JOIN CGA_XR c ON (c.ROWID=m.ROWID)
+LEFT OUTER JOIN rs ON (rs.rsId=c.rsId)
+where m.FILEID='.$value.' order by rs.Symbol desc');
+   $sth->execute() or die $sth->err;
+   my $symb="";
+   my $first=1;
+   my $data;
+   my %genes=();
+   my @mutations=();
+   if($format eq 'json') { print "{ \"filename\" : \"$filename\", \"genes\" : [ \n";};
+ #  my $tbl_ary_ref = $sth->fetchall_arrayref();
+ #  print Dumper($tbl_ary_ref);
+   my %sum=();
+   if($format eq 'csv') {
+	print "geneId\tSymbol\trowId\trsId\n";
+   }; 
+   while (my $href=$sth->fetchrow_hashref()) {
+      if(not(defined($href->{"Symbol"}))) { $href->{"Symbol"} = "Unknown_gene"; };
+      if($symb ne $href->{"Symbol"}) {
+         if($first == 0) {
+            if($format eq 'json') {
+              $genes{$data->{"Symbol"}} = '{ "id" : "'.$data->{geneId}.'", "name" : "'.$data->{"Symbol"}.'", "mutations" : [ '.join(' , ',@mutations).' ] }';
+            } elsif($format eq 'csv') {
+              $genes{$data->{"Symbol"}} = join("\n", map $data->{geneId}."\t".$data->{"Symbol"}."\t".$_, @mutations); 
+            };
+         } else { $first = 0; };
+         @mutations=();
+         $sum{$href->{"Symbol"}}=0;
+      } else {
+        $sum{$symb}+=1;
+      };
+      if($format eq 'json') {
+        push @mutations, '{ "ID" : "'.$href->{"ROWID"}.'", "rsId" : "'.$href->{"rsId"}.'" }';
+      }elsif($format eq 'csv') {
+        push @mutations, $href->{"ROWID"}."\t".$href->{"rsId"}."\t".join("\t", map $href->{$_}, sort(keys(%$href)));
+      };
+      $data->{geneId}=$href->{geneId};
+      $data->{Symbol}=$href->{Symbol};
+      $symb=$href->{Symbol};
+   };
+   if($format eq 'json') {
+     $genes{$data->{"Symbol"}} = '{ "id" : "'.$data->{geneId}.'", "name" : "'.$data->{"Symbol"}.'", "mutations" : [ '.join(' , ',@mutations).' ] }';
+   } elsif($format eq 'csv') {
+     $genes{$data->{"Symbol"}} = join("\n", map $data->{geneId}."\t".$data->{"Symbol"}."\t".$_, @mutations); 
+   };
+   if($format eq 'json') {
+     print join(",\n",map $genes{$_}, (sort {$sum{$a} <=> $sum{$b}} keys(%sum))  )." ] }";
+   } elsif ($format eq 'csv') {
+     print join("\n",map $genes{$_}, (sort {$sum{$a} <=> $sum{$b}} keys(%sum))  );
+   };
+    print  $sth->err;
+};
+$dbh->disconnect();
