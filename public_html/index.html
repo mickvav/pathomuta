@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/kappa/favicon.ico">
+
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <title>Патогенные мутации</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/kappa/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="/kappa/css/bootstrap-theme.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+#loader {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: #000;
+    opacity: 0.2;
+    filter: alpha(opacity=20);
+}
+#loading {
+    width: 50px;
+    height: 57px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -28px 0 0 -25px;
+}
+    </style>
+  </head>
+
+  <body role="document">
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Пациенты:</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">(выбор) <span class="caret"></span></a>
+              <ul class="dropdown-menu" role="menu" id="vcf-menu">
+    <script id="tmpl-vcf-menu" type="text/html">
+	{{#vcfs}}
+	<li><a href=# data-id="{{id}}">{{name}}</a></li>
+	{{/vcfs}}
+    </script>
+              </ul>
+            </li>
+            <!-- li><a href="#about">О проекте</a></li -->
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container theme-showcase" role="main">
+
+     <div class="jumbotron">
+	     <h1>Патогенные мутации</h1>
+	<p>Просмотр информации о патогенных мутациях в геномных
+	последовательностях пациентов. Выберите вариант из меню выше
+	для просмотра информации об имеющихся патогенных мутациях.</p>
+</div>
+
+<div id="vcf-info">
+</div>
+
+<script type="text/html" id="tmpl-vcf-info">
+      <div class="page-header">
+	      <h1 style="margin-top: 2em">{{ filename }}</h1>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="overflow-y: scroll; overflow-x: hidden; max-height: 500px">
+	  <p style="text-align: right">
+	  <a target="_blank" href="/cgi-bin/get-vcf?id={{fileid}}&format=csv" rel="external" data-ajax="false" class="btn btn-default">Скачать в CSV</a>
+	  </p>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Ген</th>
+                <th>Мутации в этом гене</th>
+              </tr>
+            </thead>
+            <tbody>
+	      {{#genes}}
+              <tr>
+		<td style="width: 15m; overflow: hidden;"><span class="label label-default"
+			data-id="{{ id }}">{{ name }}</span></td>
+                <td>
+		{{#mut_count}}
+			{{ mut_count }} мутаций скрыто
+		{{/mut_count}}
+		{{^mut_count}}
+		{{#mutations}}
+		<a href=# data-id="{{ ID }}">rs{{ rsId }}</a>
+		{{/mutations}}
+		{{/mut_count}}
+		</td>
+              </tr>
+	      {{/genes}}
+            </tbody>
+          </table>
+        </div>
+	<div class="col-md-6">
+		<div class="panel panel-primary" id="mutation">
+		    <div class="panel-heading">
+		      <h3 class="panel-title"></h3>
+		    </div>
+		    <div class="panel-body">
+			<p>Выберите мутацию слева</p>
+		    </div>
+		</div>
+	</div>
+      </div>
+</script>
+
+<script type="text/html" id="tmpl-mutation-info">
+		    <div class="panel-heading">
+		      <h3 class="panel-title">rs{{ name }}</h3>
+		    </div>
+		    <div class="panel-body" style="overflow: hidden">
+			    <div id="mutation-php">
+			    </div>
+			  <table class="table">
+			    <thead>
+			      <tr>
+				<th>Характеристика</th>
+				<th>Значение</th>
+			      </tr>
+			    </thead>
+			    <tbody>
+		      {{#content}}
+			{{#val}}
+			      <tr>
+				<td title="{{comment}}">{{ key }}</td>
+				<td>{{ val }}</td>
+			      </tr>
+			{{/val}}
+		      {{/content}}
+			    </tbody>
+			  </table>
+		    </div>
+</script>
+
+<script type="text/html" id="tmpl-mutation-php">
+	  <table class="table">
+	{{#gene_info.gene_abbreviation?}}
+		<tr>
+		<td><h2>Гены</h2></td>
+		</tr>
+	      <tr>
+		<td>
+	{{#gene_info.gene_abbreviation}}
+		<a class="btn btn-primary" role="button" href="http://www.ncbi.nlm.nih.gov/gene/?term={{.}}[Sym]+AND+Human[Organism]" target=_blank>{{ . }}<i class="fa fa-fw fa-external-link"></i></a>
+	{{/gene_info.gene_abbreviation}}
+		</td>
+	      </tr>
+	{{/gene_info.gene_abbreviation?}}
+
+	{{#type}}
+		<tr>
+		<td><h2>Тип</h2></td>
+		</tr>
+		<tr><td>
+		{{#missense}}
+		<span class="label label-danger">missense</span>
+		{{/missense}}
+		{{#nonsense}}
+		<span class="label label-danger">nonsense</span>
+		{{/nonsense}}
+		{{#frameshift}}
+		<span class="label label-danger">frameshift</span>
+		{{/frameshift}}
+		{{#intron}}
+		<span class="label label-warning">intron</span>
+		{{/intron}}
+		{{#splice_site}}
+		<span class="label label-warning">splice_site</span>
+		{{/splice_site}}
+		{{#utrprime}}
+		<span class="label label-warning">utrprime</span>
+		{{/utrprime}}
+		{{#synonymous}}
+		<span class="label label-info">synonymous</span>
+		{{/synonymous}}
+		</td></tr>
+	{{/type}}
+
+	{{#disease_name?}}
+	<tr>
+	<td><h2>Болезни</h2></td>
+	</tr>
+	{{#disease_name}}
+		<tr>
+			<td>{{.}}</td>
+		</tr>
+	{{/disease_name}}
+	{{/disease_name?}}
+
+	{{#reference}}
+	<tr>
+	<td><h2>Ссылки</h2></td>
+	</tr>
+	<tr><td>
+		{{#0.medgen}}
+		<a class="btn btn-default" target=_blank href="{{.}}">medgen
+		<i class="fa fa-fw fa-external-link"></i>
+		</a>
+		{{/0.medgen}}
+		{{#pubmed}}
+		<a class="btn btn-default" target=_blank href="{{.}}{{rsid}}">PubMed
+		<i class="fa fa-fw fa-external-link"></i>
+		</a>
+		{{/pubmed}}
+		{{#clinvar}}
+		<a class="btn btn-default" target=_blank href="{{.}}{{rsid}}">Clinvar
+		<i class="fa fa-fw fa-external-link"></i>
+		</a>
+		{{/clinvar}}
+		{{#dbsnp}}
+		<a class="btn btn-default" target=_blank href="{{.}}{{rsid}}">dbSNP
+		<i class="fa fa-fw fa-external-link"></i>
+		</a>
+		{{/dbsnp}}
+	</td></tr>
+	{{/reference}}
+	  </table>
+	</p>
+</script>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="/kappa/js/bootstrap.min.js"></script>
+    <script src="https://cdn.rawgit.com/jonnyreeves/jquery-Mustache/master/jquery.mustache.js"></script>
+    <script src="https://cdn.rawgit.com/janl/mustache.js/master/mustache.js"></script>
+
+<script>
+function load_vcf(ev) {
+	var id = $(this).data('id');
+	$.get('/cgi-bin/get-vcf?id=' + id).done(function(data) {
+		var vcf = $.parseJSON(data);
+
+		vcf.genes.forEach(function (el, el_i, arr) {
+		    if (el.name == "Unknown_gene") {
+			el.mut_count = el.mutations.length;
+			el.mutations = [ ];
+			el.name = "(intergene)";
+		    }
+
+		    if (el.name.length > 20)
+			el.name = el.name.substring(0, 15) + "...";
+		});
+		vcf.genes.sort(function (a, b) { return b.mutations.length - a.mutations.length });
+		vcf.fileid = id;
+
+		$('#vcf-info').mustache('tmpl-vcf-info', vcf, { method : 'html' });
+		$('#vcf-info table a').click(load_mutation);
+
+		$('.jumbotron').hide();
+	    });
+
+	ev.preventDefault();
+}
+
+function map2arr(obj) {
+	return Object.getOwnPropertyNames(obj).sort().map(
+	    function(key) { return { "key" : key, "val" : obj[key], "comment" : features[key] }; } );
+}
+
+function load_mutation(ev) {
+	var id = $(this).data('id');
+	$.get('/cgi-bin/get-mutation?id=' + id).done(function(data) {
+		var mu = $.parseJSON(data)[0];
+		delete mu.id;
+		delete mu.FILEID;
+		delete mu.ROWID;
+		delete mu.Symbol;
+		delete mu.Symbol;
+		var rsid = mu.rsId;
+		delete mu.rsId;
+		mu.content = map2arr(mu).filter(function (el, el_i, arr) {
+		    return el.val && el.val != '.';
+		});
+		mu.name = rsid;
+
+		$('#mutation').mustache('tmpl-mutation-info', mu,
+		    { method : 'html' });
+
+		$.get('/cgi-bin/mutation_info.php?rsId=' + rsid).done(function(data_php) {
+			var mu_php = $.parseJSON(data_php);
+
+			//console.log(mu_php);
+
+			mu_php.rsid = rsid;
+
+			if (mu_php.gene_info.gene_abbreviation)
+				mu_php.gene_info["gene_abbreviation?"] = 1;
+			if (mu_php.disease_name)
+				mu_php["disease_name?"] = 1;
+
+			$('#mutation-php').mustache('tmpl-mutation-php', mu_php,
+			    { method : 'html' });
+		});
+	    });
+
+	ev.preventDefault();
+}
+
+var features;
+
+$(function() {
+	$.Mustache.addFromDom();
+
+        var over = '<div id="loader"><img id="loading" src="http://bit.ly/pMtW1K"></div>';
+	$(over).appendTo('body');
+
+	jQuery.ajaxSetup({
+	  beforeSend: function() {
+	     $('#loader').show();
+	  },
+	  complete: function(){
+	     $('#loader').hide();
+	  },
+	  success: function() {}
+	});
+
+	$.get('/cgi-bin/list-vcfs').done(function(data) {
+		var vcfs = $.parseJSON(data);
+
+		$('#vcf-menu').mustache('tmpl-vcf-menu', { vcfs : vcfs }, { method : 'html' });
+		$('#vcf-menu a').click(load_vcf);
+	});
+
+	$.get('/cgi-bin/get-features-dict').done(function(data) {
+		features = $.parseJSON(data);
+	});
+});
+</script>
+
+  </body>
+</html>
