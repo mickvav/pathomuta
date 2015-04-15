@@ -1,7 +1,7 @@
-CFLAGS=? -O2
-EXEC_PREFIX=? .
-FILE=? test.txt
-FIELDWIDTH=? 1
+CFLAGS?= -O2
+EXEC_PREFIX?= .
+FILE?= test.txt
+FIELDWIDTH?= 1
 help ::
 	@echo -ne "Usage: \n  FILE=file.txt make file.gd - analise file.txt to produce graph in .gd format"
 $(EXEC_PREFIX)/analise_file:: analise_file.c

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "masked.h"
 unsigned int cluster_masksize(masked_cluster *A) {
   /** \brief Compute number of masked characters in A
@@ -60,6 +61,7 @@ unsigned int cluster_read(masked_cluster *A, FILE* F) {
   unsigned int i;
   unsigned int k=0;
   unsigned int j;
+  unsigned int N;
   int c='0';
   i=0;
   A->cluster=0;
@@ -68,7 +70,8 @@ unsigned int cluster_read(masked_cluster *A, FILE* F) {
     A->M[j]=~0x0;
   };
   j=0;
-  fscanf(F,"%ld",&(A->rs));
+  N=fscanf(F,"%ld",&(A->rs));
+  assert(N>0);
   c=fgetc(F);
   c='0';
   while((c!='\n')&&(c!=' ')&&(c!=EOF)) {
@@ -84,7 +87,8 @@ unsigned int cluster_read(masked_cluster *A, FILE* F) {
     };
   };
   if(c==' ') {
-    fscanf(F,"%lu",&(A->cluster));
+    N=fscanf(F,"%ld",&(A->cluster));
+    assert(N>0);
   };
   return k;
 };

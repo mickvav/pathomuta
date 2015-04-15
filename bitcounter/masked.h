@@ -1,5 +1,6 @@
 #ifndef _MASKED_H
 #define _MASKED_H
+#include <stdio.h>
 
 #ifndef FIELDWIDTH
 #define FIELDWIDTH 1
