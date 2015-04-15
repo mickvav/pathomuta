@@ -23,6 +23,17 @@ void add_pull() {
    };
 };
 
+void remove_pull() {
+  int j;
+  free(Pull[pulls-1]);
+  Pull[pulls-1]=NULL;
+  Pullsizes[pulls-1]=0;
+  pulls--;
+  for(j=0;j<Pullsizes[pulls-1];j++) {
+     Pull[pulls-1][j].cluster=0;
+  };
+};
+
 masked_cluster * add_to_pull_new(int Pnum) {
      int last=Pullsizes[Pnum];
      assert(Pnum<pulls);
@@ -41,6 +52,7 @@ void main(int argc, char**argv) {
   unsigned int maxbits=0;
   int i,j,k;
   int dist;
+  int mindist;
   masked_cluster *A;
   masked_cluster *B;
   masked_cluster *C;
@@ -61,6 +73,7 @@ void main(int argc, char**argv) {
     if((bits==0)&&(Pullsizes[0]>0)) { Pullsizes[0]--; };
   };
   close(F);
+  mindist=0;
   for(i=0;Pullsizes[i]>1;i++) {
     add_pull();
     for(j=0;j<Pullsizes[i];j++) {
@@ -73,7 +86,7 @@ void main(int argc, char**argv) {
           C=&(Pull[i][k]);
           if(C->cluster==0) {
             dist=cluster_distance(C,B);
-            if(i>=dist) {
+            if(mindist>=dist) {
                cluster_join(B,C,B);
                B->cluster=0;
             };
@@ -81,6 +94,13 @@ void main(int argc, char**argv) {
         }; 
       };
     }; 
+    if(Pullsizes[i]==Pullsizes[i+1]) { // Nothing changed.
+       mindist++;
+       i--;
+       remove_pull(); 
+    } else { // Something changed. Starting from =0 distance
+       mindist=0;
+    };
   };
   printf("digraph G {\n");
   for(i=0;i<pulls;i++) {
@@ -92,5 +112,6 @@ void main(int argc, char**argv) {
     printf("\n");
   };
   printf("}");
+  exit(0);
 };
 
