@@ -60,7 +60,11 @@ void main(int argc, char**argv) {
     fprintf(stderr,"Usage:\ncluster_tree file.txt\n");
     exit(1);
   };
-  F=fopen(argv[1],"r");
+  if(strcmp(argv[1],"-") == 0) {
+    F=stdin;
+  } else {
+    F=fopen(argv[1],"r");
+  };
   if(NULL == F){
     perror("Problems opening file");
     exit(2);

@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "masked.h"
+
+unsigned int item_counter=0;  // Dirty hack. Used to count lines when reading to get rs numbers.
+
 unsigned int cluster_masksize(masked_cluster *A) {
   /** \brief Compute number of masked characters in A
    */
@@ -10,6 +13,20 @@ unsigned int cluster_masksize(masked_cluster *A) {
   for(i=0;i<FIELDWIDTH;i++) {
      D+=__builtin_popcountll( ~(A->M[i]));
   };
+};
+
+masked_cluster * cluster_array_add(masked_cluster **A, int *Asize) {
+   /** \brief Takes pointer to array of clusters and it's 
+    *         size, reallocates memory to resize it and 
+    *         returns pointer to newly added element.
+    *
+    */
+        masked_cluster *B;
+        B=(masked_cluster *)realloc(*A,((*Asize)+1)*sizeof(masked_cluster));
+        assert(B!=NULL);
+        A[0]=B;
+        Asize[0]++;
+        return (A[0]+(Asize[0]-1));
 };
 
 void cluster_join(masked_cluster *A,masked_cluster *B,masked_cluster *C) {
@@ -63,14 +80,24 @@ unsigned int cluster_read(masked_cluster *A, FILE* F) {
   unsigned int j;
   unsigned int N;
   int c='0';
-  i=0;
+  char *S;
   A->cluster=0;
   for(j=0;j<FIELDWIDTH;j++) {  
     A->X[j]=0x0;
     A->M[j]=~0x0;
   };
   j=0;
-  N=fscanf(F,"%ld",&(A->rs));
+  i=0;
+  S=(char*) malloc(1);
+  while((c=getc(F)) &&(c!=' ')) { 
+    if((c>0)&&(c!=' ')) { S=(char *)realloc(S,i+2); S[i++]=c; };
+  };
+  S[i]=0;
+  item_counter++;
+  A->rs=item_counter;
+  A->Name=S;
+//  N=fscanf(F,"%ld",&(A->rs));
+  i=0;
   assert(N>0);
   c=fgetc(F);
   c='0';
@@ -93,6 +120,9 @@ unsigned int cluster_read(masked_cluster *A, FILE* F) {
   return k;
 };
 
+void cluster_write_name(masked_cluster *A, FILE* F) {
+   fprintf(F,"%ld",A->rs);
+};
 void cluster_write(masked_cluster *A, FILE* F,int length,int mode) {
   /** \brief Write single text line consisting of 
    *         vector number space character and line of 0 or 1 or N
@@ -104,7 +134,21 @@ void cluster_write(masked_cluster *A, FILE* F,int length,int mode) {
   unsigned int k;
   unsigned int j;
   int c='0';
-  if(mode==0) {fprintf(F,"%ld ",A->rs);} else { fprintf(F,"%ld [shape=record, label=\"",A->rs); };
+  if(mode==0) {
+     if(A->rs>0) {
+          fprintf(F,"%s ",A->Name); 
+                 } 
+     else {
+          fprintf(F,"%ld ",A->rs); 
+          }
+  } else { 
+     if(A->rs>0) {
+          fprintf(F,"%s [shape=record, label=\"%s ",A->Name,A->Name); 
+     } else {
+          fprintf(F,"%ld [shape=record, label=\"%ld ",A->rs,A->rs); 
+
+      };
+  };
   for(k=0,i=0,j=0;k<length;k++) {
     if((~A->M[j]) & (1<<i)) {
        fprintf(F,"N");
@@ -123,6 +167,7 @@ void cluster_write(masked_cluster *A, FILE* F,int length,int mode) {
       };
     };
   };
+  
   if(A->cluster == 0){
      if(mode==0) {
        fprintf(F,"\n");
