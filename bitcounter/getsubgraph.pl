@@ -40,11 +40,11 @@ sub printup($$$) {
     foreach my $upper (keys(%{$revlink->{$me}})) {
        if(not(defined($printed->{$upper}))) {
          printup($upper,$nup-1,$ndown);
-         if(defined($revlink->{$me}->{$upper}->{ps})) {
-            print $upper.$revlink->{$me}->{$upper}->{ps}." -> ".$me.$revlink->{$me}->{$upper}->{pe}.";\n";
-         } else {
-            print $upper." -> ".$me.";\n";
-         };
+         my $l=$revlink->{$me}->{$upper};
+         my $ps=$l->{ps};
+         my $pe=$l->{pe};
+         my $comm=$l->{comm};
+         print $upper.(defined($ps)?$ps:'')." -> ".$me.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
        };
     };
   };
@@ -52,19 +52,19 @@ sub printup($$$) {
     foreach my $downer (keys(%{$link->{$me}})) {
        if(not(defined($printed->{$downer}))) {
          printup($downer,$nup,$ndown-1);
-         if(defined($link->{$me}->{$downer}->{ps})) { 
-            print $me.$link->{$me}->{$downer}->{ps}" -> ".$downer.$link->{$me}->{$downer}->{pe}.";\n";
-         } else {
-            print $me." -> ".$downer.";\n";
-         };
+         my $l=$link->{$me}->{$downer};
+         my $ps=$l->{ps};
+         my $pe=$l->{pe};
+         my $comm=$l->{comm};
+         print $me.(defined($ps)?$ps:'')." -> ".$downer.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
        };
     };
   };
 };
 while(<FD>) {
-  if(/^\s*($RE_kn)(:$RE_kn)?\s*->\s*($RE_kn)(:$RE_kn)?\s*;/) {
-    $link->{$1}->{$3}={ps => $2, pe => $4};
-    $revlink->{$3}->{$1}={ps => $2, pe => $4};
+  if(/^\s*($RE_kn)(:$RE_kn)?\s*->\s*($RE_kn)(:$RE_kn)?\s*(\[.*\])?;?/) {
+    $link->{$1}->{$3}={ps => $2, pe => $4, comm => $5};
+    $revlink->{$3}->{$1}={ps => $2, pe => $4, comm => $5};
   } elsif(/^\s*($RE_kn)\s+([^{]*)$/) {
     $node->{$1}=$2;
   };
