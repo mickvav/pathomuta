@@ -10,7 +10,7 @@ sub Error($) {
 }
 
 
-my $GV_DIR='.';
+my $GV_DIR=".";
 my $GETSUBGRAPH_PATH='/usr/local/bin/getsubgraph.pl';
 my $DOT_PATH='/usr/bin/dot';
 my $q = CGI->new;
