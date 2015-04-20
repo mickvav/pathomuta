@@ -80,7 +80,7 @@ while(<FD>) {
         };
         $desc=~s/(URL|href)="([^"]+)"/$1="$url"/;
      } else { # No url in description. Add one
-        $desc=~s/](;)?\s*$/ URL="$full_new_url"]$1/;
+        $desc=~s/](;)?\s*$/ URL="$full_new_url"]/;
      };
      push @lines, "$id $desc";
      
