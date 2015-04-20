@@ -8,7 +8,8 @@ sub Error($) {
    exit(0);
 }
 
-my $GV_DIR='.';
+
+my $GV_DIR=".";
 my $GETSUBGRAPH_PATH='/usr/local/bin/getsubgraph.pl';
 my $DOT_PATH='/usr/bin/dot';
 my $q = CGI->new;
@@ -51,7 +52,7 @@ if(not(defined($n2))) {
   $n2=1;
 };
 
-open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $n1 $n2") or Error("Can't open pipe");
+open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2") or Error("Can't open pipe");
 
 my @lines=();
 while(<FD>) {
@@ -62,7 +63,7 @@ while(<FD>) {
      push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1-1)."&n2=$n2\" ]";
 
      push @lines, "browsegvn2plus [ shape=record,pin=true,pos=\"50,20\",pin=true,label=\"V+\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2+1)."&n1=$n1\" ]";
-     push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
+     push @lines, "browsegvn2minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
    } elsif 
      (/^\s*([0-9A-Za-z-"]+)\s+(\[.*\]);?\s*$/) {
      my $desc=$2;
@@ -78,7 +79,7 @@ while(<FD>) {
         };
         $desc=~s/(URL|href)="([^"]+)"/$1="$url"/;
      } else { # No url in description. Add one
-        $desc=~s/](;)?\s*$/ URL="$full_new_url"]$1/;
+        $desc=~s/](;)?\s*$/ URL="$full_new_url"]/;
      };
      push @lines, "$id $desc";
      
@@ -90,6 +91,7 @@ while(<FD>) {
 close FD;
 open(FD,"|-","$DOT_PATH -Tsvg") or Error("Can't pipe to dot");
 print CGI->header("image/svg+xml");
+print "\n";
 foreach my $line (@lines) {
   print FD $line."\n";
 };

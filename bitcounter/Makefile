@@ -15,3 +15,8 @@ $(FILE).gd :: $(FILE) $(EXEC_PREFIX)/analise_file cluster_tree.c  Makefile  mask
 $(EXEC_PREFIX)/clusteriser :: $(FILE) cluster_tree.c  Makefile  masked.c  masked.h
 		gcc -o $@ $(CFLAGS) -DFIELDWIDTH=$(FIELDWIDTH) cluster_tree.c masked.c  masked.h
 		
+
+install :: /usr/local/bin/getsubgraph.pl
+
+/usr/local/bin/getsubgraph.pl :: getsubgraph.pl
+	if perl -cT $<; then cp $< $@; fi
