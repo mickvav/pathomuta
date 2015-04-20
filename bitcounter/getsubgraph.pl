@@ -16,7 +16,7 @@ if ($ARGV[0] eq '-') {
    open(FD,'<'.$ARGV[0]) or die "Can't open file ".$ARGV[0]."\n";
 };
 my $keynode=$ARGV[1];
-my $RE_kn='[a-zA-Z0-9-]+';
+my $RE_kn='[a-zA-Z0-9_-]+';
 if(! ($keynode =~/^$RE_kn$/)) {
   die "Keynode should be a word consisting of A-Z a-z 0-9 -";
 };
@@ -29,12 +29,46 @@ my $link;
 my $revlink;
 my $node;
 my $printed;
+my $current_subgraph='';
+my $subgraphs=();
+my $subgraph_by_node=();
+
+sub print_subgraphs {
+#
+#  Prints all marked subgraphs.
+#
+  my $subgraphs_to_print=();
+  foreach my $node (keys(%{$printed})) {
+     $subgraphs_to_print->{$subgraph_by_node->{$node}}->{$node}=1;
+  };
+  foreach my $s (keys(%{$subgraphs_to_print})) {
+    if($s ne '') { 
+      print "subgraph $s {\n";
+    };
+    for my $j ('node','graph') {
+      if(defined($subgraphs->{$s}->{$j})) {
+        print $j." ".$subgraphs->{$s}->{$j}.";\n";
+      }; 
+    };
+    for my $n (keys(%{ $subgraphs_to_print->{$s} })) { 
+       print $n.' '.(defined($node->{$n}->{desc})?$node->{$n}->{desc}:'').";\n";
+    };
+    if($s ne '') {
+      print "}\n";
+    };
+  };
+};
+
+
 sub printup($$$) {
+#
+#  Recursive procedure, printing only necessary links and marking necessary nodes.
+#
   my ($me,$nup,$ndown) = @_;
   if(defined($printed->{$me})) {
      return;
   };
-  print $me." ".$node->{$me};
+#  print $me." ".$node->{$me}."\n";
   $printed->{$me}=1;
   if($nup>0) {
     foreach my $upper (keys(%{$revlink->{$me}})) {
@@ -62,13 +96,23 @@ sub printup($$$) {
   };
 };
 while(<FD>) {
-  if(/^\s*($RE_kn)(:$RE_kn)?\s*->\s*($RE_kn)(:$RE_kn)?\s*(\[.*\])?;?/) {
+  chomp;
+  if(/^\s*($RE_kn)(:$RE_kn)?\s*->\s*($RE_kn)(:$RE_kn)?\s*(\[.*\])?;?/) {  ## Link
     $link->{$1}->{$3}={ps => $2, pe => $4, comm => $5};
     $revlink->{$3}->{$1}={ps => $2, pe => $4, comm => $5};
-  } elsif(/^\s*($RE_kn)\s+([^{]*)$/) {
-    $node->{$1}=$2;
+  } elsif(/^\s*subgraph\s+($RE_kn)\s+{/) { ## subgraph
+    $current_subgraph = $1;
+  } elsif(/^\s*node\s+(\[.*\])\s*;?\s*$/) {
+    $subgraphs->{$current_subgraph}->{node}=$1;
+  } elsif(/^\s*graph\s+(\[.*\]);?/) {
+    $subgraphs->{$current_subgraph}->{graph}=$1;
+  } elsif(/^\s*($RE_kn)\s+(\[.*\])\s*;?\s*$/) {
+    $node->{$1}->{desc}=$2;
+    $subgraphs->{$current_subgraph}->{nodes}->{$1}=1;
+    $subgraph_by_node->{$1}=$current_subgraph;
   };
 };
 print "digraph G {\n";
 printup($keynode,$Nup,$Ndown);
+print_subgraphs();
 print "}";
