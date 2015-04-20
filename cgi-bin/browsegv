@@ -1,8 +1,97 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use CGI ;
-print CGI->header();
-print CGI->new->url();
+use CGI;
+use IPC::Open2;
+sub Error($) {
+  print CGI->header();
+  print '<html><body><b>Error: '.$_[0].'</b></body></html>';
+   exit(0);
+}
 
-my $GV_DIR='';
+my $GV_DIR='.';
+my $GETSUBGRAPH_PATH='/usr/local/bin/getsubgraph.pl';
+my $DOT_PATH='/usr/bin/dot';
+my $q = CGI->new;
+my $current_url=$q->url;
+my $file=$q->param('file');
+if(not(defined($file))) {
+   Error("file not defined");
+};
+if(not($file=~/^[a-zA-Z_\.-]+$/)) {
+   Error("bad file name");
+};
+my $fullfile=$GV_DIR."/".$file;
+if(not(-f $fullfile)) {
+   Error("file not found");
+};
+my $keynode=$q->param('keynode');
+if(not(defined($keynode))) { $keynode=''; };
+if(not($keynode=~/^[a-zA-Z0-9-]+$/)) {
+   open(FD,"<$fullfile") or Error("Can't open file");
+   while(<FD>) {
+     if(/^\s*([a-zA-Z0-9-]+)\s+\[/) {
+       $keynode=$1;
+       last;
+     };
+   };
+   close FD;
+   if($keynode eq '') { Error('File format error. No described nodes found'); };
+};
+
+my $n1=$q->param('n1');
+if(not(defined($n1))) {
+  $n1=1;
+} elsif (not($n1=~/^\d+$/)) {
+  $n1=1;
+};
+my $n2=$q->param('n2');
+if(not(defined($n2))) {
+  $n2=1;
+} elsif (not($n2=~/^\d+$/)) {
+  $n2=1;
+};
+
+open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $n1 $n2") or Error("Can't open pipe");
+
+my @lines=();
+while(<FD>) {
+   chomp;
+   if(/^\s*(strict\s+)?(di)?graph\s+([A-Za-z0-9-"])\s+{/) {
+     push @lines, $_;
+     push @lines, "browsegvn1plus [ shape=record,pin=true,pos=\"40,20\",pin=true,label=\"^+\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1+1)."&n2=$n2\" ]";
+     push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1-1)."&n2=$n2\" ]";
+
+     push @lines, "browsegvn2plus [ shape=record,pin=true,pos=\"50,20\",pin=true,label=\"V+\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2+1)."&n1=$n1\" ]";
+     push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
+   } elsif 
+     (/^\s*([0-9A-Za-z-"]+)\s+(\[.*\]);?\s*$/) {
+     my $desc=$2;
+     my $id=$1;
+     my $full_new_url="$current_url?file=$file&keynode=$id&n1=$n1&n2=$n2";
+     if($desc=~/(URL|href)="([^"]+)"/) {
+        my $url=$1;
+        if($url=~/^javascript:(.*)/) {
+           my $oldjs=$1;
+           $url=~s/^javascript:/javascript:window.open("$full_new_url","_self");$oldjs/;
+        } else {
+           $url=$full_new_url;
+        };
+        $desc=~s/(URL|href)="([^"]+)"/$1="$url"/;
+     } else { # No url in description. Add one
+        $desc=~s/](;)?\s*$/ URL="$full_new_url"]$1/;
+     };
+     push @lines, "$id $desc";
+     
+   } else {
+     push @lines, $_;
+   };
+};
+
+close FD;
+open(FD,"|-","$DOT_PATH -Tsvg") or Error("Can't pipe to dot");
+print CGI->header("image/svg+xml");
+foreach my $line (@lines) {
+  print FD $line."\n";
+};
+close(FD);

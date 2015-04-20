@@ -10,7 +10,11 @@ if(not(defined($ARGV[3]))) {
   exit(1);
 };
 
-open(FD,'<'.$ARGV[0]) or die "Can't open file ".$ARGV[0]."\n";
+if ($ARGV[0] eq '-') {
+   open(FD, '<&', \*STDIN) or die "Can't open STDIN. Hmm.\n";
+} else {
+   open(FD,'<'.$ARGV[0]) or die "Can't open file ".$ARGV[0]."\n";
+};
 my $keynode=$ARGV[1];
 my $RE_kn='[a-zA-Z0-9-]+';
 if(! ($keynode =~/^$RE_kn$/)) {
