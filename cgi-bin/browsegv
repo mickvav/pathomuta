@@ -52,10 +52,14 @@ if(not(defined($n2))) {
   $n2=1;
 };
 
+open(FD1,">/tmp/debug.dot");
+print FD1 "$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2\n";
+
 open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2") or Error("Can't open pipe");
 
 my @lines=();
 while(<FD>) {
+   print FD1 "line: $_";
    chomp;
    if(/^\s*(strict\s+)?(di)?graph\s+([A-Za-z0-9-"])\s+{/) {
      push @lines, $_;
@@ -94,5 +98,8 @@ print $q->header("image/svg+xml");
 $|=1;
 foreach my $line (@lines) {
   print FD $line."\n";
+  print FD1 $line."\n";
 };
 close(FD);
+close(FD1);
+

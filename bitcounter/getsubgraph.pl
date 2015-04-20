@@ -38,10 +38,11 @@ sub print_subgraphs {
 #  Prints all marked subgraphs.
 #
   my $subgraphs_to_print=();
+  $subgraphs_to_print->{''}=();
   foreach my $node (keys(%{$printed})) {
      $subgraphs_to_print->{$subgraph_by_node->{$node}}->{$node}=1;
   };
-  foreach my $s (keys(%{$subgraphs_to_print})) {
+  foreach my $s (sort(keys(%{$subgraphs_to_print}))) {
     if($s ne '') { 
       print "subgraph $s {\n";
     };
@@ -59,6 +60,7 @@ sub print_subgraphs {
   };
 };
 
+my @lines=();
 
 sub printup($$$) {
 #
@@ -78,7 +80,7 @@ sub printup($$$) {
          my $ps=$l->{ps};
          my $pe=$l->{pe};
          my $comm=$l->{comm};
-         print $upper.(defined($ps)?$ps:'')." -> ".$me.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
+         push @lines, $upper.(defined($ps)?$ps:'')." -> ".$me.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
        };
     };
   };
@@ -90,7 +92,7 @@ sub printup($$$) {
          my $ps=$l->{ps};
          my $pe=$l->{pe};
          my $comm=$l->{comm};
-         print $me.(defined($ps)?$ps:'')." -> ".$downer.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
+         push @lines, $me.(defined($ps)?$ps:'')." -> ".$downer.(defined($pe)?$pe:'').(defined($comm)?' '.$comm : '').";\n";
        };
     };
   };
@@ -115,4 +117,7 @@ while(<FD>) {
 print "digraph G {\n";
 printup($keynode,$Nup,$Ndown);
 print_subgraphs();
+foreach my $line (@lines) {
+  print $line;
+};
 print "}";
