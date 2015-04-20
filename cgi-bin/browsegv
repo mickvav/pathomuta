@@ -53,7 +53,7 @@ if(not(defined($n2))) {
   $n2=1;
 };
 
-open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $n1 $n2") or Error("Can't open pipe");
+open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2") or Error("Can't open pipe");
 
 my @lines=();
 while(<FD>) {
@@ -64,7 +64,7 @@ while(<FD>) {
      push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1-1)."&n2=$n2\" ]";
 
      push @lines, "browsegvn2plus [ shape=record,pin=true,pos=\"50,20\",pin=true,label=\"V+\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2+1)."&n1=$n1\" ]";
-     push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
+     push @lines, "browsegvn2minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
    } elsif 
      (/^\s*([0-9A-Za-z-"]+)\s+(\[.*\]);?\s*$/) {
      my $desc=$2;
