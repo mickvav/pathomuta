@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 use CGI;
-use IPC::Open2;
 sub Error($) {
   print CGI->header();
   print '<html><body><b>Error: '.$_[0].'</b></body></html>';
