@@ -92,6 +92,7 @@ while(<FD>) {
 close FD;
 open(FD,"|-","$DOT_PATH -Tsvg") or Error("Can't pipe to dot");
 print CGI->header("image/svg+xml");
+print "\n";
 foreach my $line (@lines) {
   print FD $line."\n";
 };
