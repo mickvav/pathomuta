@@ -16,7 +16,7 @@ my $q = CGI->new;
 my $current_url=$q->url;
 my $mode=$q->param('mode');
 if(not(defined($mode))) {
-  $mode = 'svg';
+  $mode = 'html';
 } else {
   if(not($mode=~/svg|html|dot/)) {
     Error("Bad mode");
@@ -65,9 +65,69 @@ open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2") or Error("Can't ope
 if($mode eq 'html') {
    print $q->header("text/html");
    print "<html>
+<style>
+div.button {
+  position: absolute;
+  background-color: #ADADAD;
+  font-family: monospace;
+  width: 20px;
+  height: 20px;
+  top: 10px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 20px;
+}
+div.container {
+  position: fixed;
+  background-color: #DDDDDD;
+  padding: 5px;
+  width: 120px;
+  height: 40px;
+  left: 40px;
+  vertical-align: middle;
+}
+div.indicator {
+  position: absolute;
+  background-color: #EEEEEE;
+  left: 80px;
+  height: 20px;
+  width: 20px;
+  top: 10px;
+  vertical-align: middle;
+}
+#n1m {
+  left: 60px;
+}
+#n1p {
+  left: 100px;
+}
+#n2m {
+  left: 60px;
+}
+#n2p {
+  left: 100px;
+}
+</style>
+<script language=\"JavaScript\">
+  function reload(u,f,kn,n1,n2) {
+    window.location.assign(u+'?mode=html&file='+f+'&keynode='+kn+'&n1='+n1+'&n2='+n2);
+  };
+</script>
 <body>
-<img src=\"$current_url?mode=svg&file=$file&keynode=$keynode&n1=$n1&n2=$n2\" />
+<object type=\"image/svg+xml\" data=\"$current_url?mode=svg&file=$file&keynode=$keynode&n1=$n1&n2=$n2\">
+   <span>Your browser doesn't support SVG images</span>
+</object>
 <br>
+<div class=\"container\" style=\"top:40px\">Up
+<div id=\"n1m\" class=\"button\" onclick=\"reload('$current_url','$file','$keynode','".($n1-1)."','$n2');\">-</div>
+<div id=\"n1p\" class=\"button\" onclick=\"reload('$current_url','$file','$keynode','".($n1+1)."','$n2');\">+</div>
+<div class=\"indicator\">$n1</div>
+</div>
+<div class=\"container\" style=\"top:90px\">Down
+<div id=\"n2m\" class=\"button\" onclick=\"reload('$current_url','$file','$keynode','$n1','".($n2-1)."');\">-</div>
+<div id=\"n2p\" class=\"button\" onclick=\"reload('$current_url','$file','$keynode','$n1','".($n2+1)."');\">+</div>
+<div class=\"indicator\">$n2</div>
+</div>
 <a href=\"$current_url?mode=dot&file=$file&keynode=$keynode&n1=$n1&n2=$n2\" />Download as .dot file</a>
 </body>
 </html>
@@ -80,11 +140,6 @@ while(<FD>) {
    chomp;
    if(/^\s*(strict\s+)?(di)?graph\s+([A-Za-z0-9-"])\s+{/) {
      push @lines, $_;
-     push @lines, "browsegvn1plus [ shape=record,pin=true,pos=\"40,20\",pin=true,label=\"^+\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1+1)."&n2=$n2\" ]";
-     push @lines, "browsegvn1minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n1=".($n1-1)."&n2=$n2\" ]";
-
-     push @lines, "browsegvn2plus [ shape=record,pin=true,pos=\"50,20\",pin=true,label=\"V+\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2+1)."&n1=$n1\" ]";
-     push @lines, "browsegvn2minus [ shape=record,pin=true,pos=\"45,20\",pin=true,label=\"^-\",URL=\"$current_url?file=$file&keynode=$keynode&n2=".($n2-1)."&n1=$n1\" ]";
    } elsif 
      (/^\s*([0-9A-Za-z-"]+)\s+(\[.*\]);?\s*$/) {
      my $desc=$2;
@@ -121,7 +176,13 @@ if($mode eq 'dot') {
 open(FD,"|-","$DOT_PATH -Tsvg") or Error("Can't pipe to dot");
 print $q->header("image/svg+xml");
 $|=1;
+my $newstroke=undef;
 foreach my $line (@lines) {
+#  if(not (
+   $line=~s/^\s*$keynode\s+(\[.*)color="[^"]*"/$keynode $1color="1.0 0.8 0.8"/;
+#  ) ) {
+#    $line=~s/^\s*$keynode\s+[/$keynode [color="1 0 0" /;
+#  };
   print FD $line."\n";
 };
 close(FD);
