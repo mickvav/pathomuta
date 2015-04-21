@@ -42,13 +42,13 @@ if(not($keynode=~/^[a-zA-Z0-9-]+$/)) {
 my $n1=$q->param('n1');
 if(not(defined($n1))) {
   $n1=1;
-} elsif (not($n1=~/^\d+$/)) {
+} elsif (not($n1=~/^-?\d+$/)) {
   $n1=1;
 };
 my $n2=$q->param('n2');
 if(not(defined($n2))) {
   $n2=1;
-} elsif (not($n2=~/^\d+$/)) {
+} elsif (not($n2=~/^-?\d+$/)) {
   $n2=1;
 };
 

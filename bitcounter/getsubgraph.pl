@@ -6,6 +6,7 @@ if(not(defined($ARGV[3]))) {
          keynode - node to put in center.
          N1 - number of nodes to climb up.
          N2 - number of nodes to climb down.
+         N < 0 mens - go there and don't get back.
 ";
   exit(1);
 };
@@ -22,9 +23,18 @@ if(! ($keynode =~/^$RE_kn$/)) {
 };
 my $Nup=$ARGV[2];
 my $Ndown=$ARGV[3];
-if(! ($Nup =~ /^\d+$/)) { die "N1 should be integer!\n"; };
-if(! ($Ndown =~ /^\d+$/)) { die "N2 should be integer!\n"; };
-
+if(! ($Nup =~ /^-?\d+$/)) { die "N1 should be integer!\n"; };
+if(! ($Ndown =~ /^-?\d+$/)) { die "N2 should be integer!\n"; };
+my $OnlyUp=0;
+my $OnlyDown=0;
+if($Nup<0) { 
+  $OnlyUp=1;
+  $Nup=-$Nup;
+};
+if($Ndown<0) {
+  $OnlyDown=1;
+  $Ndown=-$Ndown;
+};
 my $link;
 my $revlink;
 my $node;
@@ -75,7 +85,7 @@ sub printup($$$) {
   if($nup>0) {
     foreach my $upper (keys(%{$revlink->{$me}})) {
        if(not(defined($printed->{$upper}))) {
-         printup($upper,$nup-1,$ndown);
+         printup($upper,$nup-1,(1-$OnlyUp)*$ndown);
          my $l=$revlink->{$me}->{$upper};
          my $ps=$l->{ps};
          my $pe=$l->{pe};
@@ -87,7 +97,7 @@ sub printup($$$) {
   if($ndown>0) {
     foreach my $downer (keys(%{$link->{$me}})) {
        if(not(defined($printed->{$downer}))) {
-         printup($downer,$nup,$ndown-1);
+         printup($downer,(1-$OnlyDown)*$nup,$ndown-1);
          my $l=$link->{$me}->{$downer};
          my $ps=$l->{ps};
          my $pe=$l->{pe};
