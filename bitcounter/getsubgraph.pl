@@ -46,7 +46,7 @@ sub print_subgraphs {
     if($s ne '') { 
       print "subgraph $s {\n";
     };
-    for my $j ('node','graph') {
+    for my $j ('node','graph','rank','shape') {
       if(defined($subgraphs->{$s}->{$j})) {
         print $j." ".$subgraphs->{$s}->{$j}.";\n";
       }; 
@@ -108,6 +108,8 @@ while(<FD>) {
     $subgraphs->{$current_subgraph}->{node}=$1;
   } elsif(/^\s*graph\s+(\[.*\]);?/) {
     $subgraphs->{$current_subgraph}->{graph}=$1;
+  } elsif(/^\s*(rank|shape)\s*=\s*([A-Za-z0-9]+)\s*;/) {
+    $subgraphs->{$current_subgraph}->{$1}=$2;
   } elsif(/^\s*($RE_kn)\s+(\[.*\])\s*;?\s*$/) {
     $node->{$1}->{desc}=$2;
     $subgraphs->{$current_subgraph}->{nodes}->{$1}=1;
