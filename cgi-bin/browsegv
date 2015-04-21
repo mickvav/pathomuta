@@ -14,6 +14,14 @@ my $GETSUBGRAPH_PATH='/usr/local/bin/getsubgraph.pl';
 my $DOT_PATH='/usr/bin/dot';
 my $q = CGI->new;
 my $current_url=$q->url;
+my $mode=$q->param('mode');
+if(not(defined($mode))) {
+  $mode = 'svg';
+} else {
+  if(not($mode=~/svg|html|dot/)) {
+    Error("Bad mode");
+  };
+};
 my $file=$q->param('file');
 if(not(defined($file))) {
    Error("file not defined");
@@ -54,6 +62,19 @@ if(not(defined($n2))) {
 
 open(FD,"-|","$GETSUBGRAPH_PATH $fullfile $keynode $n1 $n2") or Error("Can't open pipe");
 
+if($mode eq 'html') {
+   print $q->header("text/html");
+   print "<html>
+<body>
+<img src=\"$current_url?mode=svg&file=$file&keynode=$keynode&n1=$n1&n2=$n2\" />
+<br>
+<a href=\"$current_url?mode=dot&file=$file&keynode=$keynode&n1=$n1&n2=$n2\" />Download as .dot file</a>
+</body>
+</html>
+";
+   exit(0);
+};
+
 my @lines=();
 while(<FD>) {
    chomp;
@@ -89,6 +110,14 @@ while(<FD>) {
 };
 
 close FD;
+if($mode eq 'dot') {
+  print $q->header("text/vnd.graphviz");
+  
+  foreach my $line (@lines) {
+    print $line."\n";
+  };
+  exit(0);
+};
 open(FD,"|-","$DOT_PATH -Tsvg") or Error("Can't pipe to dot");
 print $q->header("image/svg+xml");
 $|=1;
