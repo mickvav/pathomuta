@@ -1,3 +1,5 @@
+install:
+	rsync -r --progress . /var/www/html
 upload:
 	rsync -r --progress . 52.16.119.63:/home/kappa/public_html/
 
