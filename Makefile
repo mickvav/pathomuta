@@ -30,6 +30,12 @@ runbgrep04:: files04
 runjoinbgrep:: files
 		for i in `cat files`; do j=`basename $$i`;j=$${j%%.bz2}; f1=data/$$j.out.bgrep.head; f2=data/$$j.out.bgrep; if [ -f $$f1 -a -f $$f2 ];then cat $$f1 $$f2 > data/$$j.bgrep.joined;else echo $$f1; echo $$f2; fi; done
 		ls data/*.bgrep.joined > files.joined
-dlxmls:: clnsig-5.txt 
+dlxmls:: nimble-sig.txt clnsig-5.txt
 		if [ ! -d "data/xmls" ]; then mkdir data/xmls; fi
-		s=1;for i in `cat $<`; do j=$${i#rs}; wget -q -b -O data/xmls/$$i "http://www.ncbi.nlm.nih.gov/snp/$$j?report=XML&format=text" ; s=$$((s+1)); if [ "$$s" = "10" ]; then sleep 5; s=1; fi; done
+		s=1;for i in `cat nimble-sig.txt clnsig-5.txt`; do j=$${i#rs}; if [ ! -f data/xmls/$$i ]; then  wget -q -b -O data/xmls/$$i "http://www.ncbi.nlm.nih.gov/snp/$$j?report=XML&format=text" ; s=$$((s+1)); fi; if [ "$$s" = "10" ]; then sleep 2; wait; s=1; fi; done
+
+install:: /usr/local/bin/process_cga_xr.pl
+
+
+/usr/local/bin/process_cga_xr.pl :: process_cga_xr.pl 
+		sudo cp $< $@

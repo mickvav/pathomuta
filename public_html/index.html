@@ -14,7 +14,7 @@
     <title>Патогенные мутации</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap.css" rel="stylesheet">
     <!-- Bootstrap theme -->
     <link href="/css/bootstrap-theme.min.css" rel="stylesheet">
 
@@ -74,6 +74,14 @@
             <!-- li><a href="#about">О проекте</a></li -->
           </ul>
         </div>
+          <div id="uploader" class="navbar" style="position: fixed; right: 0px; top: 0px;">
+          <form action="/cgi-bin/upload.pl" enctype="multipart/form-data" method="post">
+           <div class="navbar-brand">Загрузить файл: </div>
+           <input class="navbar-brand" type="file" name="datafile">
+           <input  class="navbar-brand" type="submit">
+           </form>
+          </div> 
+
       </div>
     </nav>
 

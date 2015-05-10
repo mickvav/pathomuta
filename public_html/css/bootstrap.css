@@ -241,8 +241,6 @@ th {
   }
   select {
     background: #fff !important;
-  }
-  .navbar {
     display: none;
   }
   .btn > .caret,
@@ -3431,6 +3429,7 @@ tbody.collapse.in {
 .dropdown-menu {
   position: absolute;
   top: 100%;
+  height: 500px;
   left: 0;
   z-index: 1000;
   display: none;
@@ -3439,6 +3438,7 @@ tbody.collapse.in {
   padding: 5px 0;
   margin: 2px 0 0;
   font-size: 14px;
+  overflow: scroll;
   text-align: left;
   list-style: none;
   background-color: #fff;
@@ -4174,12 +4174,16 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   margin-bottom: 0;
   border-width: 1px 0 0;
 }
+
 .navbar-brand {
   float: left;
   height: 50px;
   padding: 15px 15px;
   font-size: 18px;
   line-height: 20px;
+}
+input[name=datafile] {
+  padding-top: 0px;
 }
 .navbar-brand:hover,
 .navbar-brand:focus {

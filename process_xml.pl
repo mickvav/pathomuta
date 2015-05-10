@@ -11,10 +11,11 @@ my $dbh = DBI->connect($dsn, $user, $password,
                     { RaiseError => 1, AutoCommit => 0 });
 
 my $sthrsid = $dbh->prepare(q{
-    insert into rs (rsId,Symbol,geneId,Frequency) values (?,?,?,?)
+    insert into rs (rsId,Symbol,geneId,Frequency) values (?,?,?,?) on duplicate key update Symbol=values(Symbol),geneId=values(geneId),Frequency=values(Frequency)
 })          or die $dbh->errstr;
-my $sthhgvs = $dbh->prepare('insert into rshgvs (rsId,hgvs) values (?,?)')          or die $dbh->errstr;
+my $sthhgvs = $dbh->prepare('insert into rshgvs (rsId,hgvs) values (?,?) on duplicate key update  rsId=values(rsId), hgvs=values(hgvs)')          or die $dbh->errstr;
 
+my $rsid;
 while(<>) {
   if(/<pre>/) {
     s/<pre>//;
@@ -25,7 +26,7 @@ while(<>) {
     my $p1 = XML::Parser->new(Style => "Tree");
     my $res=$p1->parse($line);
 # Maploc -> FxnSet -> symbol,geneId
-    my $rsid=$res->[1]->[0]->{rsId};
+    $rsid=$res->[1]->[0]->{rsId};
     my $freq=0;
     my @hvgs=();
     my $symbols='';
@@ -70,6 +71,7 @@ while(<>) {
 
   };
     
+  $dbh->commit();
+  print "$rsid\n";
 };
-$dbh->commit();
 $dbh->disconnect();

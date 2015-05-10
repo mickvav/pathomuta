@@ -6,12 +6,20 @@ my $dsn = 'DBI:mysql:mutfreq:localhost';
 my $user= 'mutfreq';
 my $password='mutfreq';
 
+my $RE_user='[A-Za-z0-9]+';
 my $dbh = DBI->connect($dsn, $user, $password,
                     { RaiseError => 1, AutoCommit => 0 });
 
 my $q = CGI->new;
 print $q->header();
-my $sth=$dbh->prepare('SELECT FILEID,FILENAME from files');
+my $user=$q->remote_user();
+if(defined($q->param('user'))) {
+  $user=$q->param('user');
+};
+if(!($user =~/^$RE_user$/)) {
+ $user='unknown';
+};
+my $sth=$dbh->prepare('SELECT FILEID,FILENAME from files where Owner="'.$user.'"');
 $sth->execute();
 print "[\n";
 my @list=();

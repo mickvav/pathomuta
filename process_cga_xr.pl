@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use XML::Parser;
 use Data::Dumper;
 use strict;
 use DBI;
@@ -7,11 +6,14 @@ my $dsn = 'DBI:mysql:mutfreq:localhost';
 my $user= 'mutfreq';
 my $password='mutfreq';
 
+
 my $dbh = DBI->connect($dsn, $user, $password,
                     { RaiseError => 1, AutoCommit => 0 });
-my $sth1=$dbh->prepare('DELETE from CGA_XR');
+if(not(defined($ARGV[0]))) {
+  my $sth1=$dbh->prepare('DELETE from CGA_XR');
 $sth1->execute();
-my $sth=$dbh->prepare('SELECT ROWID,info_CGA_XR from MUTATIONS');
+};
+my $sth=$dbh->prepare('SELECT ROWID,info_CGA_XR from MUTATIONS '.(defined($ARGV[0])? ' WHERE FILEID='.$ARGV[0]:'') );
 $sth->execute();
 
 my $sthelem = $dbh->prepare(q{
